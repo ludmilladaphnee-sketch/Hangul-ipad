@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Apprendre le Hangul - Écriture tactile</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 900px;
+      padding: 20px 20px 10px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #f472b6, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 24px;
+      padding: 24px;
+      margin: 12px 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    .target-char {
+      font-size: 120px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.1;
+      color: #f8fafc;
+      text-shadow: 0 0 30px rgba(167, 139, 250, 0.5);
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .romanization {
+      text-align: center;
+      font-size: 20px;
+      color: #a78bfa;
+      font-weight: 500;
+      margin-top: 4px;
+      min-height: 28px;
+    }
+    .hint {
+      text-align: center;
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 60vh;
+      margin: 20px auto 0;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.6);
+      border: 2px dashed rgba(148, 163, 184, 0.3);
+      transition: border-color 0.3s;
+      touch-action: none;
+    }
+    .canvas-wrapper.active {
+      border-color: rgba(167, 139, 250, 0.6);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .guide-char {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 220px;
+      font-weight: 700;
+      color: rgba(148, 163, 184, 0.10);
+      pointer-events: none;
+      line-height: 1;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      min-width: 130px;
+      padding: 16px 20px;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      touch-action: manipulation;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.12);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+    }
+    .feedback {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      min-height: 28px;
+      margin-top: 14px;
+      transition: opacity 0.3s;
+    }
+    .feedback.correct { color: #34d399; }
+    .feedback.wrong { color: #f87171; }
+    .feedback.info { color: #60a5fa; }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(148, 163, 184, 0.15);
+      border-radius: 3px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #60a5fa);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    .stats strong { color: #a78bfa; }
+
+    .mode-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .mode-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(148, 163, 184, 0.08);
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: rgba(139, 92, 246, 0.6);
+      color: #c4b5fd;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 22px; }
+      .target-char { font-size: 90px; min-height: 100px; }
+      .guide-char { font-size: 160px; }
+      .card { padding: 18px; margin: 8px; }
+      .canvas-wrapper { max-height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>한글 · Apprendre le Hangul</h1>
+    <p class="subtitle">Écris le caractère avec ton doigt ou l'Apple Pencil</p>
+  </header>
+
+  <div class="card">
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="consonants">Consonnes</button>
+      <button class="mode-btn" data-mode="vowels">Voyelles</button>
+      <button class="mode-btn" data-mode="syllables">Syllabes</button>
+    </div>
+
+    <div class="target-char" id="targetChar">ㄱ</div>
+    <div class="romanization" id="romanization">g / k</div>
+    <div class="hint" id="hint">Écris ce caractère dans la zone ci-dessous</div>
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <div class="guide-char" id="guideChar">ㄱ</div>
+      <canvas id="drawCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="btn-secondary" id="clearBtn">Effacer</button>
+      <button class="btn-success" id="checkBtn">Vérifier</button>
+      <button class="btn-primary" id="nextBtn">Suivant →</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="stats">
+      <span>Progrès : <strong id="statProgress">0 / 0</strong></span>
+      <span>Réussis : <strong id="statCorrect">0</strong></span>
+    </div>
+  </div>
+
+  <script>
+    // ===== Données Hangul =====
+    const DATA = {
+      consonants: [
+        { char: 'ㄱ', rom: 'g / k' }, { char: 'ㄴ', rom: 'n' }, { char: 'ㄷ', rom: 'd / t' },
+        { char: 'ㄹ', rom: 'r / l' }, { char: 'ㅁ', rom: 'm' }, { char: 'ㅂ', rom: 'b / p' },
+        { char: 'ㅅ', rom: 's' }, { char: 'ㅇ', rom: 'ng (muet)' }, { char: 'ㅈ', rom: 'j' },
+        { char: 'ㅊ', rom: 'ch' }, { char: 'ㅋ', rom: 'k' }, { char: 'ㅌ', rom: 't' },
+        { char: 'ㅍ', rom: 'p' }, { char: 'ㅎ', rom: 'h' }
+      ],
+      vowels: [
+        { char: 'ㅏ', rom: 'a' }, { char: 'ㅑ', rom: 'ya' }, { char: 'ㅓ', rom: 'eo' },
+        { char: 'ㅕ', rom: 'yeo' }, { char: 'ㅗ', rom: 'o' }, { char: 'ㅛ', rom: 'yo' },
+        { char: 'ㅜ', rom: 'u' }, { char: 'ㅠ', rom: 'yu' }, { char: 'ㅡ', rom: 'eu' },
+        { char: 'ㅣ', rom: 'i' }, { char: 'ㅐ', rom: 'ae' }, { char: 'ㅔ', rom: 'e' },
+        { char: 'ㅚ', rom: 'oe' }, { char: 'ㅟ', rom: 'wi' }
+      ],
+      syllables: [
+        { char: '가', rom: 'ga' }, { char: '나', rom: 'na' }, { char: '다', rom: 'da' },
+        { char: '라', rom: 'ra' }, { char: '마', rom: 'ma' }, { char: '바', rom: 'ba' },
+        { char: '사', rom: 'sa' }, { char: '아', rom: 'a' }, { char: '자', rom: 'ja' },
+        { char: '하', rom: 'ha' }, { char: '고', rom: 'go' }, { char: '노', rom: 'no' },
+        { char: '한', rom: 'han' }, { char: '글', rom: 'geul' }
+      ]
+    };
+
+    // ===== État =====
+    let currentMode = 'consonants';
+    let currentIndex = 0;
+    let correctCount = 0;
+    let attempted = new Set();
+    let isDrawing = false;
+    let hasDrawn = false;
+
+    // ===== Canvas =====
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('canvasWrapper');
+    const guideChar = document.getElementById('guideChar');
+    const targetChar = document.getElementById('targetChar');
+    const romanization = document.getElementById('romanization');
+    const hint = document.getElementById('hint');
+    const feedback = document.getElementById('feedback');
+    const progressFill = document.getElementById('progressFill');
+    const statProgress = document.getElementById('statProgress');
+    const statCorrect = document.getElementById('statCorrect');
+
+    // Stocke les points du tracé
+    let strokes = [];       // tableau de tableaux de points
+    let currentStroke = null;
+
+    function resizeCanvas() {
+      const rect = wrapper.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      redraw();
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      let x, y;
+      if (e.touches) {
+        const t = e.touches[0];
+        x = t.clientX - rect.left;
+        y = t.clientY - rect.top;
+      } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+      }
+      return { x, y };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      isDrawing = true;
+      hasDrawn = true;
+      wrapper.classList.add('active');
+      const p = getPos(e);
+      currentStroke = [p];
+      strokes.push(currentStroke);
+      redraw();
+    }
+
+    function moveDraw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const p = getPos(e);
+      currentStroke.push(p);
+      redraw();
+    }
+
+    function endDraw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      isDrawing = false;
+      currentStroke = null;
+    }
+
+    function redraw() {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#a78bfa';
+      ctx.lineWidth = Math.max(6, rect.width / 40);
+      ctx.shadowColor = 'rgba(167, 139, 250, 0.6)';
+      ctx.shadowBlur = 8;
+
+      for (const stroke of strokes) {
+        if (stroke.length < 2) {
+          // point unique
+          if (stroke.length === 1) {
+            ctx.beginPath();
+            ctx.arc(stroke[0].x, stroke[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#a78bfa';
+            ctx.fill();
+          }
+          continue;
+        }
+        ctx.beginPath();
+        ctx.moveTo(stroke[0].x, stroke[0].y);
+        for (let i = 1; i < stroke.length; i++) {
+          // lissage quadratique
+          const mid = {
+            x: (stroke[i-1].x + stroke[i].x) / 2,
+            y: (stroke[i-1].y + stroke[i].y) / 2
+          };
+          ctx.quadraticCurveTo(stroke[i-1].x, stroke[i-1].y, mid.x, mid.y);
+        }
+        const last = stroke[stroke.length - 1];
+        ctx.lineTo(last.x, last.y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function clearCanvas() {
+      strokes = [];
+      hasDrawn = false;
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      wrapper.classList.remove('active');
+      redraw();
+    }
+
+    // ===== Vérification =====
+    // Comparaison basée sur le nombre de traits et la direction/structure globale.
+    // Pour le Hangul, on compare le nombre de strokes avec un attendu approximatif
+    // et on vérifie que le dessin n'est pas vide. Une vraie reconnaissance est complexe,
+    // on utilise donc un système heuristique + feedback visuel.
+    
+    // Nombre de strokes attendu par caractère (approximatif, basé sur la composition)
+    const STROKE_COUNT = {
+      'ㄱ': 2, 'ㄴ': 2, 'ㄷ': 3, 'ㄹ': 5, 'ㅁ': 4, 'ㅂ': 4, 'ㅅ': 2, 'ㅇ': 1,
+      'ㅈ': 3, 'ㅊ': 4, 'ㅋ': 3, 'ㅌ': 4, 'ㅍ': 4, 'ㅎ': 3,
+      'ㅏ': 2, 'ㅑ': 3, 'ㅓ': 2, 'ㅕ': 3, 'ㅗ': 2, 'ㅛ': 3, 'ㅜ': 2, 'ㅠ': 3,
+      'ㅡ': 1, 'ㅣ': 1, 'ㅐ': 3, 'ㅔ': 3, 'ㅚ': 3, 'ㅟ': 3,
+      '가': 3, '나': 3, '다': 4, '라': 6, '마': 5, '바': 5, '사': 3, '아': 2,
+      '자': 4, '하': 4, '고': 3, '노': 3, '한': 5, '글': 6
+    };
+
+    function verifyDrawing() {
+      if (!hasDrawn || strokes.length === 0) {
+        showFeedback('✍️ Dessine d\'abord le caractère !', 'info');
+        return;
+      }
+
+      const target = DATA[currentMode][currentIndex].char;
+      const expectedStrokes = STROKE_COUNT[target] || 3;
+      const userStrokes = strokes.length;
+
+      // Heuristique : tolérance de ±1 trait, et vérifier que le dessin est centré/rempli
+      const rect = canvas.getBoundingClientRect();
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      let totalPoints = 0;
+      for (const s of strokes) {
+        for (const p of s) {
+          minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+          minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+          totalPoints++;
+        }
+      }
+      const w = maxX - minX;
+      const h = maxY - minY;
+      const coverage = (w * h) / (rect.width * rect.height);
+      const strokeRatio = userStrokes / expectedStrokes;
+
+      // Critères de réussite (heuristiques)
+      const strokeOk = Math.abs(userStrokes - expectedStrokes) <= 1;
+      const coverageOk = coverage > 0.04; // le dessin occupe assez d'espace
+      const sizeOk = w > rect.width * 0.15 || h > rect.height * 0.15;
+      const notTooMany = userStrokes <= expectedStrokes + 2;
+
+      if (strokeOk && coverageOk && sizeOk && notTooMany) {
+        // Réussi
+        showFeedback('✅ Bravo ! C\'est correct !', 'correct');
+        if (!attempted.has(currentMode + '_' + currentIndex)) {
+          attempted.add(currentMode + '_' + currentIndex);
+          correctCount++;
+        }
+        updateStats();
+        // Passer automatiquement au suivant après un court délai
+        setTimeout(() => {
+          nextChar();
+        }, 1200);
+      } else {
+        let msg = '❌ Pas tout à fait... ';
+        if (!strokeOk) msg += `Essaie avec ${expectedStrokes} trait(s). `;
+        else if (!coverageOk || !sizeOk) msg += 'Dessine plus grand et au centre. ';
+        else if (!notTooMany) msg += 'Trop de traits. ';
+        showFeedback(msg, 'wrong');
+      }
+    }
+
+    function showFeedback(text, type) {
+      feedback.textContent = text;
+      feedback.className = 'feedback ' + type;
+    }
+
+    // ===== Navigation =====
+    function loadChar() {
+      const data = DATA[currentMode][currentIndex];
+      targetChar.textContent = data.char;
+      romanization.textContent = data.rom;
+      guideChar.textContent = data.char;
+      hint.textContent = 'Écris ce caractère dans la zone ci-dessous';
+      clearCanvas();
+      updateStats();
+    }
+
+    function nextChar() {
+      const list = DATA[currentMode];
+      currentIndex = (currentIndex + 1) % list.length;
+      loadChar();
+    }
+
+    function updateStats() {
+      const list = DATA[currentMode];
+      const total = list.length;
+      const done = [...attempted].filter(k => k.startsWith(currentMode + '_')).length;
+      statProgress.textContent = `${currentIndex + 1} / ${total}`;
+      statCorrect.textContent = correctCount;
+      progressFill.style.width = (done / total * 100) + '%';
+    }
+
+    // ===== Mode selector =====
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        currentIndex = 0;
+        loadChar();
+      });
+    });
+
+    // ===== Boutons =====
+    document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+    document.getElementById('checkBtn').addEventListener('click', verifyDrawing);
+    document.getElementById('nextBtn').addEventListener('click', nextChar);
+
+    // ===== Événements canvas (souris + tactile) =====
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    window.addEventListener('mouseup', endDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw, { passive: false });
+    canvas.addEventListener('touchcancel', endDraw, { passive: false });
+
+    // Empêcher le scroll sur le canvas
+    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+    // ===== Init =====
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
+    
+    // Initialisation
+    resizeCanvas();
+    loadChar();
+
+    // Petit délai pour que la mise en page soit stable
+    setTimeout(resizeCanvas, 100);
+  </script>
+</body>
+</html>
